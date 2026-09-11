@@ -78,20 +78,37 @@ description + instructions) plus optional `references/`, `scripts/`, `assets/`.
   (and its entry was removed from `manifest.json`). It remains available on the
   Claude account; keep any copy of it out of shared or public repositories.
 - **Eight skills were uploaded to claude.ai without supporting files their own
-  SKILL.md instructions reference** — the gap is in the source uploads, not in
-  this export, which mirrors the account sync byte-for-byte:
-  - `dora`, `eu-ai-act`, `iso27001`, `iso42001`, `nis2` — SKILL.md only; each
-    cites `references/` guides (e.g. `references/rts-its-guide.md`,
-    `references/article-reference.md`) that are absent from the upload.
-  - `ciso-executive-summary` — missing `assets/template.html`, the canonical
-    dashboard template its workflow mandates reading.
-  - `tprm-slide-generator`, `pptx-executive-summary-ciso` — missing
-    `references/data_schema.md` and `references/template_layout.md`.
+  SKILL.md instructions reference — regenerated here (2026-09-11).** The gap is
+  in the source uploads (this export mirrors the account sync byte-for-byte),
+  so the missing files were reconstructed and added to this backup, each marked
+  in its header as a dated reconstruction:
+  - `dora` — four references (64-article guide, RTS/ITS guide, incident
+    classification per CDR 2024/1772, third-party risk Arts. 28-44) rebuilt
+    from SKILL.md and the official texts.
+  - `eu-ai-act` — three references (risk classification, high-risk
+    obligations, GPAI governance) rebuilt likewise.
+  - `iso27001` — Annex A 2022 (93 controls) and 2013 (114 controls)
+    catalogues plus the 2013-to-2022 mapping; summaries in original wording,
+    not verbatim standard text.
+  - `iso42001` — clause 4-10 requirements, the 38-control Annex A catalogue,
+    and the AI risk / impact assessment methodology.
+  - `nis2` — the Art. 21(2)(a)-(j) measures guide and the ISO 27001:2022
+    mapping.
+  - `ciso-executive-summary` — `assets/template.html` rebuilt from the
+    surviving `references/html-template-spec.md` (tokenized placeholders
+    replace the lost original's baseline data).
+  - `tprm-slide-generator`, `pptx-executive-summary-ciso` —
+    `references/data_schema.md` and `references/template_layout.md` derived
+    directly from the skills' own scripts and template constants.
 
-  These skills still work in degraded form (the SKILL.md instructions carry most
-  of the logic), but to make the backup fully self-sufficient, re-upload each
-  skill on claude.ai with its complete folder (references/, assets/) and re-run
-  this export.
+  The reconstructions are faithful to each SKILL.md's citations but are not
+  the original files: verify regulatory citations against EUR-Lex / official
+  ISO publications before relying on them, and consider re-uploading the
+  completed skill folders to claude.ai so account sync and backup converge.
+  Known upstream item: `dora/SKILL.md` itself inverts DORA Art. 30(2)/30(3)
+  (the regulation has 30(2) as the all-services baseline and 30(3) as the
+  critical/important-function additions); the regenerated references follow
+  the correct reading.
 
 ## Known limitations of this export
 
