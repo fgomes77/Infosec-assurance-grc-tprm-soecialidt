@@ -59,7 +59,9 @@ skills exported in `skills/`):
   `prescription-refill`, `return-refund`, `setup-writing-style`, `skill-creator`,
   `slack-gif-creator`, `theme-factory`, `web-artifacts-builder`
 
-Canonical upstream source: <https://github.com/anthropics/skills>.
+Canonical upstream source: <https://github.com/anthropics/skills>. A complete
+copy of this tree (unpacked folders and packaged `.skill` bundles) is included
+in this export under `platform-skills/`.
 
 ## Harness / session skills (environment-provided)
 
