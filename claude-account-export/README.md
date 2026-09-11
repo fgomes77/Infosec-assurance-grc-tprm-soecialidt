@@ -20,6 +20,7 @@ one skill deliberately excluded from this export for data-protection reasons.
 | `skills/manifest.json` | The account's skill manifest — skill IDs, sources, descriptions, last-updated timestamps (redacted: the excluded skill's entry removed) |
 | `local-skills/session-start-hook/` | Environment-local skill provisioned in the remote container |
 | `platform-skills/` | Complete copy of `/mnt/skills` from the session container — Anthropic's 8 public and 32 example built-in skills, each as an unpacked folder plus its packaged `.skill` bundle (canonical upstream: <https://github.com/anthropics/skills>) |
+| `environment/ENVIRONMENT.md` | Manifest of the session container: root filesystem layout, what is and isn't exportable, OS and toolchain versions |
 | `PERSONA.md` | The configured user persona / response preferences (system-level profile) |
 | `CAPABILITIES.md` | MCP servers, connectors, agent types, and built-in platform skills available to the account's sessions |
 
