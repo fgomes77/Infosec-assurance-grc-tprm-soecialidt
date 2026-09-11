@@ -105,10 +105,12 @@ description + instructions) plus optional `references/`, `scripts/`, `assets/`.
   the original files: verify regulatory citations against EUR-Lex / official
   ISO publications before relying on them, and consider re-uploading the
   completed skill folders to claude.ai so account sync and backup converge.
-  Known upstream item: `dora/SKILL.md` itself inverts DORA Art. 30(2)/30(3)
-  (the regulation has 30(2) as the all-services baseline and 30(3) as the
-  critical/important-function additions); the regenerated references follow
-  the correct reading.
+  Corrected upstream error: `dora/SKILL.md` as deployed inverted DORA
+  Art. 30(2)/30(3) (the regulation has 30(2) as the all-services baseline and
+  30(3) as the critical/important-function additions). The copy in this export
+  is corrected (Art. 30 section, gap-analysis table, common-errors table) —
+  the deployed skill on claude.ai carries the error until re-uploaded from
+  here.
 
 ## Known limitations of this export
 

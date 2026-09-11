@@ -330,19 +330,28 @@ Register of Information (RoI)
 - Perform assessment before entering new arrangements for critical functions (Art. 29(3))
 
 #### Art. 30 — Key Contractual Provisions
-Contracts with ICT TPSPs supporting critical or important functions must include:
+**Art. 30(2) — baseline provisions for ALL ICT service contracts:**
 
-- **Art. 30(2)(a):** Clear description of ICT services
-- **Art. 30(2)(b):** Locations where services are provided and data processed
-- **Art. 30(2)(c):** Data protection provisions
-- **Art. 30(2)(d):** Accessibility, availability, integrity, security provisions
-- **Art. 30(2)(e):** Audit and access rights for the entity, competent authority, and resolution authority
-- **Art. 30(2)(f):** Termination rights and minimum exit notice periods
-- **Art. 30(2)(g):** Reporting and monitoring obligations
-- **Art. 30(2)(h):** Data portability and migration assistance on termination
-- **Art. 30(2)(i):** Sub-contracting arrangements — prior consent and notification
+- **Art. 30(2)(a):** Clear and complete description of all functions and ICT services
+- **Art. 30(2)(b):** Locations where functions/services are provided and data processed, with advance notice of changes
+- **Art. 30(2)(c):** Provisions on availability, authenticity, integrity and confidentiality of data, including personal data
+- **Art. 30(2)(d):** Provisions on access, recovery and return of data on insolvency, resolution, discontinuation, or termination
+- **Art. 30(2)(e):** Service level descriptions, including updates and revisions
+- **Art. 30(2)(f):** Obligation to provide assistance on ICT incidents related to the service, at no additional or pre-determined cost
+- **Art. 30(2)(g):** Obligation to fully cooperate with the entity's competent and resolution authorities
+- **Art. 30(2)(h):** Termination rights and related minimum notice periods
+- **Art. 30(2)(i):** Conditions for participation in the entity's ICT security awareness programmes and digital resilience training
 
-For non-critical arrangements: a lighter set of provisions applies (Art. 30(3)).
+**Art. 30(3) — ADDITIONAL provisions where the ICT services support critical or important functions:**
+
+- **Art. 30(3)(a):** Full service level descriptions with precise quantitative and qualitative performance targets
+- **Art. 30(3)(b):** Notice periods and reporting obligations of the TPSP, including notification of developments materially affecting service delivery
+- **Art. 30(3)(c):** Requirements to implement and test business contingency plans and to have in place ICT security measures, tools, and policies
+- **Art. 30(3)(d):** Obligation to participate and fully cooperate in the entity's TLPT (Arts. 26-27)
+- **Art. 30(3)(e):** Right to monitor performance on an ongoing basis: unrestricted rights of access, inspection, and audit (including for the competent authority and appointed third parties), alternative assurance levels where other clients' data would be affected, cooperation duties during inspections, and escalation details
+- **Art. 30(3)(f):** Exit strategies: a mandatory adequate transition period with continued service delivery and support for migration to another provider or in-house
+
+The Art. 30(2) baseline applies to every ICT services arrangement; the Art. 30(3) items are additions for critical or important functions — not the other way around.
 
 **Key RTS:** CDR (EU) 2024/1773 (detailed contractual provisions)
 **Key RTS:** CDR (EU) 2025/532 (subcontracting of ICT services)
@@ -435,8 +444,8 @@ arrangements** with other financial entities. Requirements:
 | Art. 28(3) Register of Information | RoI per CIR 2024/2956 fields | No Register; or Register lacks mandatory fields |
 | Art. 28(6) ICT concentration risk assessment | Concentration risk report | No assessment; multiple critical functions on single cloud provider |
 | Art. 28(7) Exit strategy | Exit strategy plan per arrangement | No exit plans; SLAs do not address exit |
-| Art. 30(2) Contractual provisions | Contract review against Art. 30(2)(a)–(i) | Legacy contracts predate DORA; missing audit rights, exit rights |
-| Art. 30(2)(e) Audit and access rights | Contractual audit clause; evidence of use | Contracts with large cloud providers have no meaningful audit clause |
+| Art. 30(2) Contractual provisions | Contract review against Art. 30(2)(a)–(i), plus Art. 30(3)(a)–(f) for critical/important functions | Legacy contracts predate DORA; missing audit rights, exit rights |
+| Art. 30(3)(e) Audit and access rights | Contractual audit clause; evidence of use | Contracts with large cloud providers have no meaningful audit clause |
 
 ---
 
@@ -497,7 +506,7 @@ specified in CDR (EU) 2025/1190.
 | Using EBA/GL/2019/04 as the current ICT guideline | That guideline has been superseded by DORA for in-scope entities since Jan 17, 2025 |
 | Treating "Chapter II" and "Chapter III" interchangeably | Chapter II = proactive risk framework; Chapter III = reactive incident management |
 | Calling TLPT a "penetration test" | TLPT is intelligence-led adversarial simulation, not a standard penetration test |
-| Assuming all vendors need Art. 30(2) provisions | Art. 30(3) provides lighter provisions for non-critical arrangements |
+| Assuming all vendors need the Art. 30(3) enhanced provisions | Art. 30(2) is the baseline for ALL ICT contracts; Art. 30(3) adds provisions only for critical/important functions |
 | Submitting one incident report and closing the loop | DORA requires 3-stage reporting: initial (4h), intermediate (72h), final (1 month) |
 | Treating the Register of Information as a vendor list | The RoI has specific mandatory fields per CIR 2024/2956; a vendor list does not comply |
 
