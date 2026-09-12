@@ -1,0 +1,257 @@
+{
+  "definition": {
+    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "foundryEndpoint": {
+        "type": "string",
+        "defaultValue": "https://{foundry-account}.services.ai.azure.com/api/projects/{project-name}"
+      },
+      "apiVersion": { "type": "string", "defaultValue": "{foundry-api-version}" },
+      "deepsearchAgentId": { "type": "string", "defaultValue": "{deepsearch-protocol-agent-id}" },
+      "sharepointSiteId": { "type": "string", "defaultValue": "{sharepoint-site-id}" },
+      "watchlistListId": { "type": "string", "defaultValue": "{supplier-watchlist-list-id}" },
+      "dashboardsDrivePath": { "type": "string", "defaultValue": "/TPRM/DeepSearch-Dashboards" },
+      "scoreThreshold": { "type": "int", "defaultValue": 60 },
+      "jiraBaseUrl": { "type": "string", "defaultValue": "https://{jira-tenant}.atlassian.net" },
+      "jiraAuthHeader": { "type": "securestring", "defaultValue": "Basic {jira-basic-auth-from-key-vault}" },
+      "jiraProjectKey": { "type": "string", "defaultValue": "{jira-project-key}" },
+      "approvalWebhookUrl": { "type": "securestring", "defaultValue": "" }
+    },
+    "triggers": {
+      "Weekly_recurrence": {
+        "type": "Recurrence",
+        "recurrence": { "frequency": "Week", "interval": 1, "schedule": { "weekDays": [ "Monday" ], "hours": [ "5" ] } }
+      }
+    },
+    "actions": {
+      "Read_supplier_watchlist_from_SharePoint": {
+        "type": "Http",
+        "inputs": {
+          "method": "GET",
+          "uri": "https://graph.microsoft.com/v1.0/sites/@{parameters('sharepointSiteId')}/lists/@{parameters('watchlistListId')}/items",
+          "queries": { "expand": "fields(select=SupplierName,SupplierDomain)" },
+          "authentication": { "type": "ManagedServiceIdentity", "audience": "https://graph.microsoft.com" }
+        },
+        "runAfter": {}
+      },
+      "For_each_watchlist_supplier": {
+        "type": "Foreach",
+        "foreach": "@body('Read_supplier_watchlist_from_SharePoint')?['value']",
+        "runAfter": { "Read_supplier_watchlist_from_SharePoint": [ "Succeeded" ] },
+        "actions": {
+          "Run_deepsearch_agent_for_supplier": {
+            "type": "Http",
+            "inputs": {
+              "method": "POST",
+              "uri": "@{parameters('foundryEndpoint')}/threads/runs",
+              "queries": { "api-version": "@parameters('apiVersion')" },
+              "headers": { "Content-Type": "application/json" },
+              "authentication": { "type": "ManagedServiceIdentity", "audience": "https://ai.azure.com" },
+              "body": {
+                "assistant_id": "@parameters('deepsearchAgentId')",
+                "thread": {
+                  "messages": [
+                    {
+                      "role": "user",
+                      "content": "Run DeepSearch on @{items('For_each_watchlist_supplier')?['fields']?['SupplierName']} (@{items('For_each_watchlist_supplier')?['fields']?['SupplierDomain']}). Return the full single-file HTML dashboard, followed on the final line by 'OVERALL_SCORE: <0-100>'."
+                    }
+                  ]
+                }
+              }
+            },
+            "runAfter": {}
+          },
+          "Wait_until_deepsearch_run_completes": {
+            "type": "Until",
+            "expression": "@not(equals(body('Poll_deepsearch_run_status')?['status'], 'in_progress'))",
+            "limit": { "count": 90, "timeout": "PT45M" },
+            "runAfter": { "Run_deepsearch_agent_for_supplier": [ "Succeeded" ] },
+            "actions": {
+              "Delay_before_poll": {
+                "type": "Wait",
+                "inputs": { "interval": { "count": 30, "unit": "Second" } },
+                "runAfter": {}
+              },
+              "Poll_deepsearch_run_status": {
+                "type": "Http",
+                "inputs": {
+                  "method": "GET",
+                  "uri": "@{parameters('foundryEndpoint')}/threads/@{body('Run_deepsearch_agent_for_supplier')?['thread_id']}/runs/@{body('Run_deepsearch_agent_for_supplier')?['id']}",
+                  "queries": { "api-version": "@parameters('apiVersion')" },
+                  "authentication": { "type": "ManagedServiceIdentity", "audience": "https://ai.azure.com" }
+                },
+                "runAfter": { "Delay_before_poll": [ "Succeeded" ] }
+              }
+            }
+          },
+          "Get_dashboard_message": {
+            "type": "Http",
+            "inputs": {
+              "method": "GET",
+              "uri": "@{parameters('foundryEndpoint')}/threads/@{body('Run_deepsearch_agent_for_supplier')?['thread_id']}/messages",
+              "queries": { "api-version": "@parameters('apiVersion')", "order": "desc", "limit": "1" },
+              "authentication": { "type": "ManagedServiceIdentity", "audience": "https://ai.azure.com" }
+            },
+            "runAfter": { "Wait_until_deepsearch_run_completes": [ "Succeeded" ] }
+          },
+          "Parse_overall_score": {
+            "type": "Compose",
+            "inputs": "@int(trim(last(split(first(body('Get_dashboard_message')?['data'])?['content']?[0]?['text']?['value'], 'OVERALL_SCORE:'))))",
+            "runAfter": { "Get_dashboard_message": [ "Succeeded" ] }
+          },
+          "Send_approval_request_dashboard_upload": {
+            "type": "Http",
+            "inputs": {
+              "method": "POST",
+              "uri": "@parameters('approvalWebhookUrl')",
+              "headers": { "Content-Type": "application/json" },
+              "body": {
+                "subject": "DeepSearch dashboard upload for @{items('For_each_watchlist_supplier')?['fields']?['SupplierName']} (score @{outputs('Parse_overall_score')})",
+                "targetSystem": "SharePoint (@{parameters('dashboardsDrivePath')})",
+                "draft": "@{first(body('Get_dashboard_message')?['data'])?['content']?[0]?['text']?['value']}",
+                "correlationId": "@{workflow().run.name}",
+                "callback": "Approve or reject via the callback URL registered by the Wait_for_approval_dashboard_upload step of this run."
+              }
+            },
+            "runAfter": { "Parse_overall_score": [ "Succeeded" ] }
+          },
+          "Wait_for_approval_dashboard_upload": {
+            "type": "HttpWebhook",
+            "inputs": {
+              "subscribe": {
+                "method": "POST",
+                "uri": "@parameters('approvalWebhookUrl')",
+                "headers": { "Content-Type": "application/json" },
+                "body": {
+                  "callbackUrl": "@{listCallbackUrl()}",
+                  "correlationId": "@{workflow().run.name}",
+                  "instruction": "POST {\"decision\":\"approved\"|\"rejected\",\"approver\":\"<upn>\"} to callbackUrl"
+                }
+              },
+              "unsubscribe": {}
+            },
+            "limit": { "timeout": "P3D" },
+            "runAfter": { "Send_approval_request_dashboard_upload": [ "Succeeded" ] }
+          },
+          "Check_approval_decision_dashboard_upload": {
+            "type": "If",
+            "expression": { "and": [ { "equals": [ "@body('Wait_for_approval_dashboard_upload')?['decision']", "approved" ] } ] },
+            "runAfter": { "Wait_for_approval_dashboard_upload": [ "Succeeded" ] },
+            "actions": {
+              "Store_HTML_dashboard_in_SharePoint": {
+                "type": "Http",
+                "inputs": {
+                  "method": "PUT",
+                  "uri": "https://graph.microsoft.com/v1.0/sites/@{parameters('sharepointSiteId')}/drive/root:@{parameters('dashboardsDrivePath')}/DeepSearch-@{items('For_each_watchlist_supplier')?['fields']?['SupplierDomain']}-@{formatDateTime(utcNow(), 'yyyy-MM-dd')}.html:/content",
+                  "headers": { "Content-Type": "text/html" },
+                  "authentication": { "type": "ManagedServiceIdentity", "audience": "https://graph.microsoft.com" },
+                  "body": "@{first(body('Get_dashboard_message')?['data'])?['content']?[0]?['text']?['value']}"
+                },
+                "runAfter": {}
+              },
+              "If_score_below_threshold": {
+                "type": "If",
+                "expression": { "and": [ { "less": [ "@outputs('Parse_overall_score')", "@parameters('scoreThreshold')" ] } ] },
+                "runAfter": { "Store_HTML_dashboard_in_SharePoint": [ "Succeeded" ] },
+                "actions": {
+                  "Send_approval_request_low_score_jira_ticket": {
+                    "type": "Http",
+                    "inputs": {
+                      "method": "POST",
+                      "uri": "@parameters('approvalWebhookUrl')",
+                      "headers": { "Content-Type": "application/json" },
+                      "body": {
+                        "subject": "Jira ticket for low DeepSearch score @{outputs('Parse_overall_score')} — @{items('For_each_watchlist_supplier')?['fields']?['SupplierName']}",
+                        "targetSystem": "Jira project @{parameters('jiraProjectKey')}",
+                        "draft": "Weekly DeepSearch scored @{items('For_each_watchlist_supplier')?['fields']?['SupplierName']} at @{outputs('Parse_overall_score')} (threshold @{parameters('scoreThreshold')}). Dashboard: @{body('Store_HTML_dashboard_in_SharePoint')?['webUrl']}",
+                        "correlationId": "@{workflow().run.name}",
+                        "callback": "Approve or reject via the callback URL registered by the Wait_for_approval_low_score_jira_ticket step of this run."
+                      }
+                    },
+                    "runAfter": {}
+                  },
+                  "Wait_for_approval_low_score_jira_ticket": {
+                    "type": "HttpWebhook",
+                    "inputs": {
+                      "subscribe": {
+                        "method": "POST",
+                        "uri": "@parameters('approvalWebhookUrl')",
+                        "headers": { "Content-Type": "application/json" },
+                        "body": {
+                          "callbackUrl": "@{listCallbackUrl()}",
+                          "correlationId": "@{workflow().run.name}",
+                          "instruction": "POST {\"decision\":\"approved\"|\"rejected\",\"approver\":\"<upn>\"} to callbackUrl"
+                        }
+                      },
+                      "unsubscribe": {}
+                    },
+                    "limit": { "timeout": "P3D" },
+                    "runAfter": { "Send_approval_request_low_score_jira_ticket": [ "Succeeded" ] }
+                  },
+                  "Check_approval_decision_low_score_jira_ticket": {
+                    "type": "If",
+                    "expression": { "and": [ { "equals": [ "@body('Wait_for_approval_low_score_jira_ticket')?['decision']", "approved" ] } ] },
+                    "runAfter": { "Wait_for_approval_low_score_jira_ticket": [ "Succeeded" ] },
+                    "actions": {
+                      "Create_Jira_ticket_for_low_score": {
+                        "type": "Http",
+                        "inputs": {
+                          "method": "POST",
+                          "uri": "@{parameters('jiraBaseUrl')}/rest/api/2/issue",
+                          "headers": { "Content-Type": "application/json", "Authorization": "@parameters('jiraAuthHeader')" },
+                          "body": {
+                            "fields": {
+                              "project": { "key": "@{parameters('jiraProjectKey')}" },
+                              "issuetype": { "name": "Task" },
+                              "summary": "DeepSearch low score @{outputs('Parse_overall_score')} for @{items('For_each_watchlist_supplier')?['fields']?['SupplierName']}",
+                              "description": "Weekly DeepSearch scored @{items('For_each_watchlist_supplier')?['fields']?['SupplierName']} at @{outputs('Parse_overall_score')} (threshold @{parameters('scoreThreshold')}). Dashboard: @{body('Store_HTML_dashboard_in_SharePoint')?['webUrl']}"
+                            }
+                          }
+                        },
+                        "runAfter": {}
+                      }
+                    },
+                    "else": {
+                      "actions": {
+                        "Record_rejection_low_score_jira_ticket": {
+                          "type": "Compose",
+                          "inputs": {
+                            "outcome": "rejected_or_expired",
+                            "supplier": "@{items('For_each_watchlist_supplier')?['fields']?['SupplierName']}",
+                            "decision": "@{body('Wait_for_approval_low_score_jira_ticket')?['decision']}",
+                            "approver": "@{body('Wait_for_approval_low_score_jira_ticket')?['approver']}",
+                            "note": "No Jira ticket was created for the low DeepSearch score."
+                          },
+                          "runAfter": {}
+                        }
+                      }
+                    }
+                  }
+                },
+                "else": { "actions": {} }
+              }
+            },
+            "else": {
+              "actions": {
+                "Record_rejection_dashboard_upload": {
+                  "type": "Compose",
+                  "inputs": {
+                    "outcome": "rejected_or_expired",
+                    "supplier": "@{items('For_each_watchlist_supplier')?['fields']?['SupplierName']}",
+                    "decision": "@{body('Wait_for_approval_dashboard_upload')?['decision']}",
+                    "approver": "@{body('Wait_for_approval_dashboard_upload')?['approver']}",
+                    "note": "DeepSearch dashboard was NOT stored in SharePoint and no Jira ticket was raised."
+                  },
+                  "runAfter": {}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "outputs": {}
+  },
+  "parameters": {}
+}
